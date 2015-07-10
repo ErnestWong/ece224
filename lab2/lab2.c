@@ -16,8 +16,8 @@ int cc[5000];
 int ONE_SEC_FREQ = 88200;
 
 #ifdef BUTTON_PIO_BASE
-static void button_ISR(void* context, alt_u32 id) {
-
+static void button_ISR(void* context, alt_u32 id)
+{
 	push_button = IORD(BUTTON_PIO_BASE, 3) & 0xf;
 
 	printf("button interrupt triggered: %d\n", push_button);
@@ -29,7 +29,8 @@ static void button_ISR(void* context, alt_u32 id) {
 		break;
 		//button 1 -- starts playing, set playing to 1
 		case 2:
-			if (playing == 0) { // disable when playing
+			if (playing == 0)
+      { // disable when playing
 				playing = 1;
 				read_switch();
         LCD_Display(file_data.Name, playback_state);
@@ -37,7 +38,8 @@ static void button_ISR(void* context, alt_u32 id) {
 		break;
 		//button 2 -- show next song (if at the end, loop back)
 		case 4:
-			if (playing == 0) { // disable when playing
+			if (playing == 0)
+      { // disable when playing
 				next_song();
 				read_switch();
         LCD_Display(file_data.Name, playback_state);
@@ -45,7 +47,8 @@ static void button_ISR(void* context, alt_u32 id) {
 		break;
 		//button 3 -- shows previous song (if at the beginning, stay there)
 		case 8:
-			if (playing == 0) { // disable when playing
+			if (playing == 0)
+      { // disable when playing
 				prev_song();
 				read_switch();
         LCD_Display(file_data.Name, playback_state);
@@ -63,14 +66,16 @@ static void button_ISR(void* context, alt_u32 id) {
 #endif
 
 //reads switch bits and set playback state accordingly
-void read_switch() {
+void read_switch()
+{
 	//AND switch with 111 and put to switch statement
 	switch_rd = IORD(SWITCH_PIO_BASE, 0) & 0x7;
 	printf("switch num: %d", switch_rd);
 	playback_state = switch_rd;
 }
 
-void init() {
+void init()
+{
 	SD_card_init();
 	init_mbr();
 	init_bs();
@@ -78,9 +83,11 @@ void init() {
 	init_audio_codec();
 }
 
-void next_song() {
+void next_song()
+{
 	//search for file based on file number. if returns 1 (file not found), reset file number to 0
-	if (search_for_filetype("WAV", &file_data, 0, 1) == 1) {
+	if (search_for_filetype("WAV", &file_data, 0, 1) == 1)
+  {
 		file_number = 0;
 		search_for_filetype("WAV", &file_data, 0, 1);
 	}
@@ -90,7 +97,8 @@ void next_song() {
 
 //decrement file number by 2, if negative then set to 0.
 //search for file and show on LCD
-void prev_song() {
+void prev_song()
+{
 	file_number -= 2;
 	if (file_number < 0)
 		file_number = 0;
@@ -99,14 +107,17 @@ void prev_song() {
 	LCD_Display(file_data.Name, playback_state);
 }
 
-void play_double() {
+void play_double()
+{
 	UINT16 tmpLeft, tmpRight;
 	int i;
 	int sectorNum = 0;
 
-	while (get_rel_sector(&file_data, cluster_buffer, cc, sectorNum) == 0) {
+	while (get_rel_sector(&file_data, cluster_buffer, cc, sectorNum) == 0)
+  {
 		//write LL and RR in buffer, then skip entire LLRR cycle
-		for (i = 0; i < 512; i += 8) {
+		for (i = 0; i < 512; i += 8)
+    {
 			if (playing == 0)
 				return;
 
@@ -122,15 +133,18 @@ void play_double() {
 	}
 }
 
-void play_normal() {
+void play_normal()
+{
 	UINT16 tmp;
 	int i;
 	int sectorNum = 0;
 
 	printf("normal sped\n");
 
-	while (get_rel_sector(&file_data, cluster_buffer, cc, sectorNum) == 0) {
-		for (i = 0; i < 512; i += 2) {
+	while (get_rel_sector(&file_data, cluster_buffer, cc, sectorNum) == 0)
+  {
+		for (i = 0; i < 512; i += 2)
+    {
 			if (playing == 0)
 				return;
 
@@ -143,13 +157,16 @@ void play_normal() {
 	}
 }
 
-void play_half() {
+void play_half()
+{
 	UINT16 tmpLeft, tmpRight;
 	int i;
 	int sectorNum = 0;
 
-	while (get_rel_sector(&file_data, cluster_buffer, cc, sectorNum) == 0) {
-		for (i = 0; i < 512; i += 4) {
+	while (get_rel_sector(&file_data, cluster_buffer, cc, sectorNum) == 0)
+  {
+		for (i = 0; i < 512; i += 4)
+    {
 			if (playing == 0)
 				return;
 
@@ -171,18 +188,20 @@ void play_half() {
 	}
 }
 
-void play_reverse() {
+void play_reverse()
+{
 	UINT16 tmpLeft, tmpRight;
 	int i;
 	int sectorNum = (file_data.FileSize / BPB_BytsPerSec) - 3;
 
-	while (get_rel_sector(&file_data, cluster_buffer, cc, sectorNum) == 0) {
-		for (i = 512 - 1; i > 0; i -= 2) {
+	while (get_rel_sector(&file_data, cluster_buffer, cc, sectorNum) == 0)
+  {
+		for (i = 512 - 1; i > 0; i -= 2)
+    {
 			if (playing == 0)
 				return;
 
-			while (IORD(AUD_FULL_BASE, 0)) {
-			}; //wait until the FIFO is not full
+			while (IORD(AUD_FULL_BASE, 0)) {}; //wait until the FIFO is not full
 
 			//tmpRight = (cluster_buffer[i] << 8) | (cluster_buffer[i - 1]); //Package 2 8-bit bytes from the
 			//sector buffer array into the
@@ -198,7 +217,8 @@ void play_reverse() {
 	}
 }
 
-void play_delay() {
+void play_delay()
+{
     UINT16 tmpLeft, tmpRight;
     int i;
     UINT16 tmp;
@@ -208,8 +228,10 @@ void play_delay() {
     int pointer = 0;                  //queue pointer started at 0
     int counter = 0;                  //counter to increment until ONE_SEC_FREQ (1 second)
 
-    while(get_rel_sector(&file_data, cluster_buffer, cc, sectorNum) == 0) {
-        for(i = 0; i < 512; i += 4) {
+    while(get_rel_sector(&file_data, cluster_buffer, cc, sectorNum) == 0)
+    {
+        for(i = 0; i < 512; i += 4)
+        {
 
             if (playing == 0)
               return;
@@ -218,11 +240,14 @@ void play_delay() {
 
             tmpLeft = ( cluster_buffer[ i + 1 ] << 8 ) | ( cluster_buffer[ i ] );
             tmpRight = ( cluster_buffer[ i + 3 ] << 8 ) | ( cluster_buffer[ i + 2 ] );
-            if(counter < ONE_SEC_FREQ) {
+            if(counter < ONE_SEC_FREQ)
+            {
                 //set current queue pointer array element to tmpLeft and set tmpLeft to 0 (silence)
                 queue[pointer] = tmpLeft;
                 tmpLeft = 0;
-            } else {
+            }
+            else
+            {
                 //swap queue[pointer] with current tmpLeft
                 tmp = queue[pointer];
                 queue[pointer] = tmpLeft;
@@ -243,7 +268,8 @@ void play_delay() {
 
     //at the end, play the remaining stuff in the queue (1 second)
 
-    for(i = 0; i < queue_size; i++) {
+    for(i = 0; i < queue_size; i++)
+    {
         while (IORD(AUD_FULL_BASE, 0)) {}; 			//wait until the FIFO is not full
         IOWR( AUDIO_0_BASE, 0, queue[pointer] );    //write current queue pointer element to audio
         while (IORD(AUD_FULL_BASE, 0)) {}; 			//wait until the FIFO is not full
@@ -252,7 +278,8 @@ void play_delay() {
     }
 }
 
-void play_song() {
+void play_song()
+{
 	if (playing == 0) // if not playing
 		return;
 
@@ -264,7 +291,8 @@ void play_song() {
 
 	LCD_Display(file_data.Name, playback_state);
 
-	switch (playback_state) {
+	switch (playback_state)
+  {
 	case 0x1: //001
 		play_double();
 		break;
@@ -283,7 +311,8 @@ void play_song() {
 	playing = 0;
 }
 
-int main() {
+int main()
+{
 	printf("main\n");
 	init();
 	alt_irq_register(BUTTON_PIO_IRQ, (void*) 0, button_ISR);
@@ -292,7 +321,8 @@ int main() {
 
 	//initialize the board with the first song
 	next_song();
-	while (1) {
+	while (1)
+  {
 		play_song();
 	}
 	return 0;
